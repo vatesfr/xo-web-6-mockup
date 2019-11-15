@@ -1,0 +1,60 @@
+.menu {
+  background-color: #333333;
+}
+
+.scroll-style {
+  overflow-y: scroll;
+  height: 100vh;
+}
+
+.menu a {
+  display: block;
+  color: #cacaca;
+  font-size: 18px;
+  padding: 1em;
+  cursor: pointer;
+  background-color: #333333;
+}
+
+.menu p {
+  display: block;
+  color: #cacaca;
+  font-size: 24px;
+  font-weight: bold;
+  font-variant: small-caps;
+  padding: 1em;
+  background-color: #333333;
+}
+
+.menu a:link {
+  text-decoration: none;
+}
+
+.menu a:visited {
+  text-decoration: none;
+}
+
+.menu a:hover {
+  background-color: black;
+}
+
+.menu a:active {
+  color: white;
+}
+
+/* width */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px grey;
+  border-radius: 10px;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #b42626;
+  border-radius: 10px;
+}
