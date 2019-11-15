@@ -169,48 +169,6 @@ export const generateId = () =>
     .toString(36)
     .slice(2);
 
-const createTree = ({ data }) => {
-  const DOMNodes = [];
-  forEach(data, (_data, groupKey) => {
-    DOMNodes.push(<div>{groupKey}</div>);
-
-    forEach(_data, (obj, objType) => {
-      DOMNodes.push(<div style={{ marginLeft: "20px" }}>{objType}</div>);
-      const createSubTree = (arrayOfObj, treeTemplate, DOMNodes) => {
-        forEach(arrayOfObj, _obj => {
-          DOMNodes.push(
-            <div style={{ marginLeft: "40px" }}>{_obj.name_label}</div>
-          );
-          const objTemplate = treeTemplate[objType];
-          forEach(objTemplate, (tree, treeKey) => {
-            DOMNodes.push(<div style={{ marginLeft: "60px" }}>{treeKey}</div>);
-            const correspondingObjects = filter(
-              objects,
-              _ => _.type === treeKey && _[connectors[treeKey]] === _obj.id
-            );
-
-            forEach(correspondingObjects, _ => {
-              console.log(_);
-              DOMNodes.push(
-                <div style={{ marginLeft: "80px" }}>
-                  {_[nameLabelByObject[treeKey]]}
-                </div>
-              );
-            });
-
-            // console.log("corresponding objects", correspondingObjects);
-            // console.log("tree", tree);
-            // console.log("-------------------------------");
-            createSubTree(correspondingObjects, tree, DOMNodes);
-          });
-        });
-      };
-      createSubTree(obj, TEMPLATE, DOMNodes);
-    });
-  });
-  return DOMNodes;
-};
-
 const withState = provideState({
   initialState: () => ({
     isCollapseOpen: {},
@@ -320,193 +278,272 @@ const withState = provideState({
             objects,
             ComplexMatcher.parse(searchFilter || "").createPredicate()
           );
-          // When there's no groupBy and no searchFilter, think of a way how you're going to display objects
           return groupBy(_filteredObjects, searchGroupBy || "type");
         })();
       });
-      return createTree({ data: objsBySearchName });
-      // return objsBySearchName;
+      return objsBySearchName;
     }
   }
 });
 
-const Menu = ({ effects, state, setObject }) => (
-  <div className="menu scroll-style">
-    <p style={{ fontSize: "24px" }}>
-      <img src={Logo} alt="logo" height="20" width="40" /> Xen Orchestra
-    </p>
-    <ListGroup style={{ color: "white" }} flush className="h-100">
-      <MenuItem>
-        <div onClick={effects.toggleObjects}>
-          <strong style={{ fontSize: "22px" }}>
-            <FaCube /> Objects{" "}
-            {state.isObjectsOpen ? (
-              <FaAngleDown size="30" className="float-right" />
-            ) : (
-              <FaAngleRight size="30" className="float-right" />
-            )}
-          </strong>
-        </div>
-        <div
-          style={{
-            marginLeft: "20px",
-            marginRight: "20px",
-            marginTop: "10px",
-            marginBottom: "10px"
-          }}
-        >
-          <Input
-            style={{ backgroundColor: "#404040", color: "white" }}
-            onChange={effects.handleSearch}
-            placeholder="search"
-            value={state.searchValue}
-          />
-        </div>
-        <br />
-        <span>Saved searchs</span>
-        <br />
-        {map(state.objs, (data, name) => (
-          <Item
-            className="mb-1 ml-3"
-            // onClick={() => effects.setCurrentSavedSearch(name)}
-          >
-            <div
-              style={{ cursor: "pointer" }}
-              id={name}
-              onClick={() => effects.toggle(name)}
-            >
-              {!state.isCollapseOpen[name] ? (
-                <FaPlusSquare />
-              ) : (
-                <FaRegMinusSquare />
-              )}{" "}
-              {capitalize(lowerCase(name))}
-            </div>
-            <Collapse isOpen={state.isCollapseOpen[name]} className="mt-1 ml-2">
-              {/* {state.isCollapseOpen[name] &&
-                Object.keys(data).map(key => {
-                  return (
-                    <Item className="mb-1 ml-3">
-                      <div
-                        style={{ cursor: "pointer" }}
-                        id={key}
-                        onClick={() => effects.toggle(key)}
-                      >
-                        {!state.isCollapseOpen[key] ? (
-                          <FaPlusSquare />
-                        ) : (
-                          <FaRegMinusSquare />
-                        )}{" "}
-                        {key}
-                      </div>
-                      <Collapse isOpen={state.isCollapseOpen[key]}>
-                        {state.isCollapseOpen[key] && (
-                          <Form>
-                            {data[key].map(elt => (
-                              <Item
-                                className="mt-1"
-                                onClick={() => setObject(elt)}
-                              >
-                                <div style={{ marginLeft: "30px" }}>
-                                  <FormGroup check>
-                                    <Input
-                                      type="checkbox"
-                                      name="check"
-                                      id={elt.id}
-                                      onChange={ev =>
-                                        effects.handleSelectedItem(ev, elt)
-                                      }
-                                    />
-                                    <Label for={elt.id} check>
-                                      {elt.name_label}
-                                    </Label>
-                                  </FormGroup>
-                                </div>
-                              </Item>
-                            ))}
-                          </Form>
-                        )}
-                      </Collapse>
-                    </Item>
-                  );
-                })} */}
-            </Collapse>
-          </Item>
-        ))}
-        {state.objs}
-      </MenuItem>
-      <div className="text-center">
-        <Button
-          // color="light"
-          size="sm"
-          onClick={effects.toggleSearchModal}
-          style={{
-            width: "200px",
-            marginTop: "10px",
-            marginBottom: "10px"
-          }}
-        >
-          New search <FaPlus />
-        </Button>
-      </div>
-    </ListGroup>
+const Menu = ({ effects, state, setObject }) => {
+  const createTree = ({ data }) => {
+    const DOMNodes = [];
+    forEach(data, (_data, groupKey) => {
+      DOMNodes.push(<div>{groupKey}</div>);
 
-    <Modal isOpen={state.addSearchModal} toggle={effects.toggleSearchModal}>
-      <ModalHeader toggle={effects.toggleSearchModal}>New search</ModalHeader>
-      <Form onSubmit={effects.handleSubmitAddSearch}>
-        <ModalBody>
-          <FormGroup>
-            <Label for="searchName">Search name</Label>
+      forEach(_data, (obj, objType) => {
+        DOMNodes.push(<div style={{ marginLeft: "20px" }}>{objType}</div>);
+        const createSubTree = (arrayOfObj, treeTemplate, DOMNodes) => {
+          forEach(arrayOfObj, _obj => {
+            DOMNodes.push(
+              <div
+                style={{ marginLeft: "40px" }}
+                onClick={() => effects.toggle(_obj.name_label)}
+              >
+                {!state.isCollapseOpen[_obj.name_label] ? (
+                  <FaPlusSquare />
+                ) : (
+                  <FaRegMinusSquare />
+                )}{" "}
+                {_obj[nameLabelByObject[_obj.type]]}
+              </div>
+            );
+            const upperNodes = [];
+            const objTemplate = treeTemplate[objType];
+            forEach(objTemplate, (tree, treeKey) => {
+              upperNodes.push(
+                <div
+                  style={{ marginLeft: "60px", color: "red" }}
+                  onClick={() => effects.toggle(_obj.id)}
+                >
+                  {!state.isCollapseOpen[_obj.id] ? (
+                    <FaPlusSquare />
+                  ) : (
+                    <FaRegMinusSquare />
+                  )}{" "}
+                  {treeKey}
+                </div>
+              );
+              const correspondingObjects = filter(
+                objects,
+                _ => _.type === treeKey && _[connectors[treeKey]] === _obj.id
+              );
+
+              const nodes = [];
+              forEach(correspondingObjects, _ => {
+                nodes.push(
+                  <div style={{ marginLeft: "80px", color: "green" }}>
+                    {_[nameLabelByObject[treeKey]]}
+                  </div>
+                );
+              });
+
+              DOMNodes.push(
+                <Collapse isOpen={state.isCollapseOpen[_obj.id]}>
+                  {nodes.length > 0 && state.isCollapseOpen[_obj.id]
+                    ? nodes
+                    : null}
+                </Collapse>
+              );
+
+              createSubTree(correspondingObjects, tree, DOMNodes);
+            });
+            DOMNodes.push(
+              <Collapse isOpen={state.isCollapseOpen[_obj.name_label]}>
+                {upperNodes.length > 0 && state.isCollapseOpen[_obj.name_label]
+                  ? upperNodes
+                  : null}
+              </Collapse>
+            );
+          });
+        };
+        createSubTree(obj, TEMPLATE, DOMNodes);
+      });
+    });
+    return DOMNodes;
+  };
+
+  const objs = createTree({ data: state.objs });
+
+  return (
+    <div className="menu scroll-style">
+      <p style={{ fontSize: "24px" }}>
+        <img src={Logo} alt="logo" height="20" width="40" /> Xen Orchestra
+      </p>
+      <ListGroup style={{ color: "white" }} flush className="h-100">
+        <MenuItem>
+          <div onClick={effects.toggleObjects}>
+            <strong style={{ fontSize: "22px" }}>
+              <FaCube /> Objects{" "}
+              {state.isObjectsOpen ? (
+                <FaAngleDown size="30" className="float-right" />
+              ) : (
+                <FaAngleRight size="30" className="float-right" />
+              )}
+            </strong>
+          </div>
+          <div
+            style={{
+              marginLeft: "20px",
+              marginRight: "20px",
+              marginTop: "10px",
+              marginBottom: "10px"
+            }}
+          >
             <Input
-              type="text"
-              name="searchName"
-              id="searchName"
-              placeholder="Search name"
-              onChange={effects.handleSearchInputs}
-              value={state.searchName}
-              required
+              style={{ backgroundColor: "#404040", color: "white" }}
+              onChange={effects.handleSearch}
+              placeholder="search"
+              value={state.searchValue}
             />
-          </FormGroup>
-          <FormGroup>
-            <Label for="searchFilter">Filter</Label>
-            <Input
-              type="text"
-              name="searchFilter"
-              id="searchFilter"
-              placeholder="Filter"
-              value={state.searchFilter}
-              onChange={effects.handleSearchInputs}
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label for="searchGroupBy">Group by</Label>
-            <Input
-              type="select"
-              name="searchGroupBy"
-              id="searchGroupBy"
-              onChange={effects.handleSearchInputs}
-              value={state.searchGroupBy}
-            >
-              <option value="" disabled selected>
-                Select your option
-              </option>
-              <option>type</option>
-              <option>tag</option>
-              <option>folter</option>
-            </Input>
-          </FormGroup>
-        </ModalBody>
-        <ModalFooter>
-          <Button color="primary" type="submit">
-            Search
-          </Button>{" "}
-          <Button color="secondary" onClick={effects.toggleSearchModal}>
-            Cancel
+          </div>
+          <br />
+          <span>Saved searchs</span>
+          <br />
+          {/* {map(state.objs, (data, name) => (
+        <Item
+          className="mb-1 ml-3"
+          // onClick={() => effects.setCurrentSavedSearch(name)}
+        >
+          <div
+            style={{ cursor: "pointer" }}
+            id={name}
+            onClick={() => effects.toggle(name)}
+          >
+            {!state.isCollapseOpen[name] ? (
+              <FaPlusSquare />
+            ) : (
+              <FaRegMinusSquare />
+            )}{" "}
+            {capitalize(lowerCase(name))}
+          </div>
+          <Collapse isOpen={state.isCollapseOpen[name]} className="mt-1 ml-2">
+            {state.isCollapseOpen[name] &&
+              Object.keys(data).map(key => {
+                return (
+                  <Item className="mb-1 ml-3">
+                    <div
+                      style={{ cursor: "pointer" }}
+                      id={key}
+                      onClick={() => effects.toggle(key)}
+                    >
+                      {!state.isCollapseOpen[key] ? (
+                        <FaPlusSquare />
+                      ) : (
+                        <FaRegMinusSquare />
+                      )}{" "}
+                      {key}
+                    </div>
+                    <Collapse isOpen={state.isCollapseOpen[key]}>
+                      {state.isCollapseOpen[key] && (
+                        <Form>
+                          {data[key].map(elt => (
+                            <Item
+                              className="mt-1"
+                              onClick={() => setObject(elt)}
+                            >
+                              <div style={{ marginLeft: "30px" }}>
+                                <FormGroup check>
+                                  <Input
+                                    type="checkbox"
+                                    name="check"
+                                    id={elt.id}
+                                    onChange={ev =>
+                                      effects.handleSelectedItem(ev, elt)
+                                    }
+                                  />
+                                  <Label for={elt.id} check>
+                                    {elt.name_label}
+                                  </Label>
+                                </FormGroup>
+                              </div>
+                            </Item>
+                          ))}
+                        </Form>
+                      )}
+                    </Collapse>
+                  </Item>
+                );
+              })}
+          </Collapse>
+        </Item>
+      ))} */}
+          {objs}
+        </MenuItem>
+        <div className="text-center">
+          <Button
+            // color="light"
+            size="sm"
+            onClick={effects.toggleSearchModal}
+            style={{
+              width: "200px",
+              marginTop: "10px",
+              marginBottom: "10px"
+            }}
+          >
+            New search <FaPlus />
           </Button>
-        </ModalFooter>
-      </Form>
-    </Modal>
-  </div>
-);
+        </div>
+      </ListGroup>
+
+      <Modal isOpen={state.addSearchModal} toggle={effects.toggleSearchModal}>
+        <ModalHeader toggle={effects.toggleSearchModal}>New search</ModalHeader>
+        <Form onSubmit={effects.handleSubmitAddSearch}>
+          <ModalBody>
+            <FormGroup>
+              <Label for="searchName">Search name</Label>
+              <Input
+                type="text"
+                name="searchName"
+                id="searchName"
+                placeholder="Search name"
+                onChange={effects.handleSearchInputs}
+                value={state.searchName}
+                required
+              />
+            </FormGroup>
+            <FormGroup>
+              <Label for="searchFilter">Filter</Label>
+              <Input
+                type="text"
+                name="searchFilter"
+                id="searchFilter"
+                placeholder="Filter"
+                value={state.searchFilter}
+                onChange={effects.handleSearchInputs}
+              />
+            </FormGroup>
+            <FormGroup>
+              <Label for="searchGroupBy">Group by</Label>
+              <Input
+                type="select"
+                name="searchGroupBy"
+                id="searchGroupBy"
+                onChange={effects.handleSearchInputs}
+                value={state.searchGroupBy}
+              >
+                <option value="" disabled selected>
+                  Select your option
+                </option>
+                <option>type</option>
+                <option>tag</option>
+                <option>folter</option>
+              </Input>
+            </FormGroup>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="primary" type="submit">
+              Search
+            </Button>{" "}
+            <Button color="secondary" onClick={effects.toggleSearchModal}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </Form>
+      </Modal>
+    </div>
+  );
+};
 
 export default withState(injectState(Menu));
