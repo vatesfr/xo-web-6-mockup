@@ -182,16 +182,20 @@ const withState = provideState({
     searchFilter: "",
     searchGroupBy: "",
     savedSearchs: {
-      // instrastructure: {
-      //   searchFilter: "type:pool",
-      //   searchGroupBy: "type"
-      // },
+      instrastructure: {
+        searchFilter: "type:pool",
+        searchGroupBy: "type"
+      },
       // byType: {
       //   // searchFilter: "type:pool",
       //   searchGroupBy: "type"
       // },
       byVDI: {
-        searchFilter: "type:VM",
+        searchFilter: `type:VM`,
+        searchGroupBy: "type"
+      },
+      byNetwork: {
+        searchFilter: "type:network",
         searchGroupBy: "type"
       }
     }
@@ -290,13 +294,37 @@ const Menu = ({ effects, state, setObject }) => {
   const createTree = ({ data }) => {
     const DOMNodes = [];
     forEach(data, (_data, groupKey) => {
-      DOMNodes.push(<div>{groupKey}</div>);
-
+      DOMNodes.push(
+        <div
+          // style={{ marginLeft: "40px" }}
+          onClick={() => effects.toggle(groupKey)}
+        >
+          {!state.isCollapseOpen[groupKey] ? (
+            <FaPlusSquare />
+          ) : (
+            <FaRegMinusSquare />
+          )}{" "}
+          {groupKey}
+        </div>
+      );
+      const searchGroup = [];
       forEach(_data, (obj, objType) => {
-        DOMNodes.push(<div style={{ marginLeft: "20px" }}>{objType}</div>);
+        searchGroup.push(
+          <div
+            style={{ marginLeft: "20px" }}
+            onClick={() => effects.toggle(objType)}
+          >
+            {!state.isCollapseOpen[objType] ? (
+              <FaPlusSquare />
+            ) : (
+              <FaRegMinusSquare />
+            )}{" "}
+            {objType}
+          </div>
+        );
         const createSubTree = (arrayOfObj, treeTemplate, DOMNodes) => {
           forEach(arrayOfObj, _obj => {
-            DOMNodes.push(
+            searchGroup.push(
               <div
                 style={{ marginLeft: "40px" }}
                 onClick={() => effects.toggle(_obj.name_label)}
@@ -339,7 +367,7 @@ const Menu = ({ effects, state, setObject }) => {
                 );
               });
 
-              DOMNodes.push(
+              searchGroup.push(
                 <Collapse isOpen={state.isCollapseOpen[_obj.id]}>
                   {nodes.length > 0 && state.isCollapseOpen[_obj.id]
                     ? nodes
@@ -349,17 +377,17 @@ const Menu = ({ effects, state, setObject }) => {
 
               createSubTree(correspondingObjects, tree, DOMNodes);
             });
-            DOMNodes.push(
-              <Collapse isOpen={state.isCollapseOpen[_obj.name_label]}>
-                {upperNodes.length > 0 && state.isCollapseOpen[_obj.name_label]
-                  ? upperNodes
-                  : null}
-              </Collapse>
-            );
           });
         };
         createSubTree(obj, TEMPLATE, DOMNodes);
       });
+      DOMNodes.push(
+        <Collapse isOpen={state.isCollapseOpen[groupKey]}>
+          {searchGroup.length > 0 && state.isCollapseOpen[groupKey]
+            ? searchGroup
+            : null}
+        </Collapse>
+      );
     });
     return DOMNodes;
   };
@@ -528,7 +556,7 @@ const Menu = ({ effects, state, setObject }) => {
                 </option>
                 <option>type</option>
                 <option>tag</option>
-                <option>folter</option>
+                <option>folder</option>
               </Input>
             </FormGroup>
           </ModalBody>
