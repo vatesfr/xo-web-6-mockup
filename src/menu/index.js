@@ -293,8 +293,8 @@ const withState = provideState({
   },
   computed: {
     filteredObjects: ({ predicate }) => filter(objects, predicate),
-    predicate: ({ searchValue, currentSavedSearch }) =>
-      ComplexMatcher.parse(currentSavedSearch.searchFilter).createPredicate(),
+    predicate: ({ searchValue }) =>
+      ComplexMatcher.parse(searchValue).createPredicate(),
     objs: ({ filteredObjects, savedSearchs }) => {
       const objsBySearchName = {};
       Object.keys(savedSearchs).forEach(searchName => {
@@ -302,10 +302,14 @@ const withState = provideState({
           const searchFilter = savedSearchs[searchName].searchFilter;
           const searchGroupBy = savedSearchs[searchName].searchGroupBy;
           const _filteredObjects = filter(
-            objects,
+            // objects,
+            filteredObjects,
             ComplexMatcher.parse(searchFilter || "").createPredicate()
           );
-          return groupBy(_filteredObjects, searchGroupBy || "type");
+          console.log(searchGroupBy);
+          return !isEmpty(searchGroupBy)
+            ? groupBy(_filteredObjects, searchGroupBy)
+            : _filteredObjects;
         })();
       });
       return objsBySearchName;
@@ -314,7 +318,7 @@ const withState = provideState({
 });
 
 const Menu = ({ effects, state, setObject }) => {
-  console.log(state.treeTemplateData);
+  console.log(state.objs);
   const makeSubTreeFromTemplateTree = (type, parentId) =>
     map(objects, _ => {
       if (_.type === type && _[connectors[type]] === parentId) {
@@ -459,7 +463,11 @@ const Menu = ({ effects, state, setObject }) => {
         </div>
       </ListGroup>
 
-      <Modal isOpen={state.adjustModal} toggle={effects.toggleAdjustModal}>
+      <Modal
+        isOpen={state.adjustModal}
+        toggle={effects.toggleAdjustModal}
+        size="lg"
+      >
         <ModalHeader toggle={effects.toggleAdjustModal}>
           Adjust tree view
         </ModalHeader>
