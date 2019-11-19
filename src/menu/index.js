@@ -46,7 +46,10 @@ import objects from "../data/objects";
 import data from "../data/sample";
 
 import "./index.css";
+import "react-sortable-tree/style.css";
 import Logo from "../imgs/logo.png";
+
+import SortableTree from "react-sortable-tree";
 
 const MenuItem = styled(ListGroupItem)`
   background-color: transparent;
@@ -98,7 +101,9 @@ const nameLabelByObject = {
   "VDI-unmanaged": "name_label",
   network: "name_label",
   VIF: "MAC",
-  PIF: "deviceName"
+  PIF: "deviceName",
+  pool_patch: "name",
+  pool: "name_label"
 };
 
 const TEMPLATE = {
@@ -169,6 +174,30 @@ export const generateId = () =>
     .toString(36)
     .slice(2);
 
+const adjustableTemplate = [
+  {
+    title: "Pool",
+    children: [
+      { title: "VM", children: [{ title: "VBD" }, { title: "VM_snapshot" }] },
+      { title: "VM_template" },
+      { title: "VM_controller" },
+      {
+        title: "Host",
+        children: [{ title: "FGPU" }, { title: "PBD" }, { title: "PCI" }]
+      },
+      {
+        title: "SR",
+        children: [
+          { title: "VDI" },
+          { title: "VDI_snapshot" },
+          { title: "VDI_unmanaged" }
+        ]
+      },
+      { title: "Netword", children: [{ title: "VIF" }, { title: "PIF" }] }
+    ]
+  }
+];
+
 const withState = provideState({
   initialState: () => ({
     isCollapseOpen: {},
@@ -178,27 +207,17 @@ const withState = provideState({
     searchValue: "",
     selectedElements: [],
     addSearchModal: false,
+    adjustModal: false,
     searchName: "",
     searchFilter: "",
     searchGroupBy: "",
     savedSearchs: {
-      instrastructure: {
+      Instrastructures: {
         searchFilter: "type:pool",
         searchGroupBy: "type"
-      },
-      // byType: {
-      //   // searchFilter: "type:pool",
-      //   searchGroupBy: "type"
-      // },
-      byVDI: {
-        searchFilter: `type:VM`,
-        searchGroupBy: "type"
-      },
-      byNetwork: {
-        searchFilter: "type:network",
-        searchGroupBy: "type"
       }
-    }
+    },
+    treeTemplateData: adjustableTemplate
   }),
   effects: {
     handleSearch(_, evt) {
@@ -241,6 +260,9 @@ const withState = provideState({
     toggleSearchModal() {
       return { addSearchModal: !this.state.addSearchModal };
     },
+    toggleAdjustModal() {
+      return { adjustModal: !this.state.adjustModal };
+    },
     handleSearchInputs(_, ev) {
       return {
         [ev.target.name]: ev.target.value
@@ -266,7 +288,8 @@ const withState = provideState({
         },
         addSearchModal: false
       };
-    }
+    },
+    onTreeTemplateDataChange: (_, treeTemplateData) => ({ treeTemplateData })
   },
   computed: {
     filteredObjects: ({ predicate }) => filter(objects, predicate),
@@ -291,108 +314,83 @@ const withState = provideState({
 });
 
 const Menu = ({ effects, state, setObject }) => {
-  const createTree = ({ data }) => {
-    const DOMNodes = [];
-    forEach(data, (_data, groupKey) => {
-      DOMNodes.push(
-        <div
-          // style={{ marginLeft: "40px" }}
-          onClick={() => effects.toggle(groupKey)}
-        >
-          {!state.isCollapseOpen[groupKey] ? (
+  console.log(state.treeTemplateData);
+  const makeSubTreeFromTemplateTree = (type, parentId) =>
+    map(objects, _ => {
+      if (_.type === type && _[connectors[type]] === parentId) {
+        return (
+          <div style={{ marginLeft: "10px" }}>
+            <span onClick={() => effects.toggle(_.id)}>
+              {!state.isCollapseOpen[_.id] ? (
+                <FaPlusSquare />
+              ) : (
+                <FaRegMinusSquare />
+              )}{" "}
+              {_[nameLabelByObject[_.type]]}
+            </span>
+            <div>{constructSubTree(_)}</div>
+          </div>
+        );
+      }
+    });
+
+  const constructSubTree = obj =>
+    map(TEMPLATE[obj.type], (value, type) => (
+      <div style={{ marginLeft: "10px" }}>
+        <span onClick={() => effects.toggle(value.id + type)}>
+          {!state.isCollapseOpen[value.id + type] ? (
             <FaPlusSquare />
           ) : (
             <FaRegMinusSquare />
           )}{" "}
-          {groupKey}
-        </div>
-      );
-      const searchGroup = [];
-      forEach(_data, (obj, objType) => {
-        searchGroup.push(
-          <div
-            style={{ marginLeft: "20px" }}
-            onClick={() => effects.toggle(objType)}
-          >
-            {!state.isCollapseOpen[objType] ? (
-              <FaPlusSquare />
-            ) : (
-              <FaRegMinusSquare />
-            )}{" "}
-            {objType}
-          </div>
-        );
-        const createSubTree = (arrayOfObj, treeTemplate, DOMNodes) => {
-          forEach(arrayOfObj, _obj => {
-            searchGroup.push(
-              <div
-                style={{ marginLeft: "40px" }}
-                onClick={() => effects.toggle(_obj.name_label)}
-              >
-                {!state.isCollapseOpen[_obj.name_label] ? (
-                  <FaPlusSquare />
-                ) : (
-                  <FaRegMinusSquare />
-                )}{" "}
-                {_obj[nameLabelByObject[_obj.type]]}
-              </div>
-            );
-            const upperNodes = [];
-            const objTemplate = treeTemplate[objType];
-            forEach(objTemplate, (tree, treeKey) => {
-              upperNodes.push(
-                <div
-                  style={{ marginLeft: "60px", color: "red" }}
-                  onClick={() => effects.toggle(_obj.id)}
-                >
-                  {!state.isCollapseOpen[_obj.id] ? (
-                    <FaPlusSquare />
-                  ) : (
-                    <FaRegMinusSquare />
-                  )}{" "}
-                  {treeKey}
-                </div>
-              );
-              const correspondingObjects = filter(
-                objects,
-                _ => _.type === treeKey && _[connectors[treeKey]] === _obj.id
-              );
+          {`${type}s`}
+        </span>
+        <Collapse isOpen={state.isCollapseOpen[value.id + type]}>
+          {state.isCollapseOpen[value.id + type] &&
+            makeSubTreeFromTemplateTree(type, obj.id)}
+        </Collapse>
+      </div>
+    ));
 
-              const nodes = [];
-              forEach(correspondingObjects, _ => {
-                nodes.push(
-                  <div style={{ marginLeft: "80px", color: "green" }}>
-                    {_[nameLabelByObject[treeKey]]}
-                  </div>
-                );
-              });
+  const constructTreeFromArray = data =>
+    map(data, obj => (
+      <div style={{ marginLeft: "10px" }}>
+        <span onClick={() => effects.toggle(obj.id)}>
+          {isEmpty(TEMPLATE[obj.type]) ? null : !state.isCollapseOpen[
+              obj.id
+            ] ? (
+            <FaPlusSquare />
+          ) : (
+            <FaRegMinusSquare />
+          )}{" "}
+          {obj[nameLabelByObject[obj.type]]}
+        </span>
+        <Collapse isOpen={state.isCollapseOpen[obj.id]}>
+          {state.isCollapseOpen[obj.id] && constructSubTree(obj)}
+        </Collapse>
+      </div>
+    ));
 
-              searchGroup.push(
-                <Collapse isOpen={state.isCollapseOpen[_obj.id]}>
-                  {nodes.length > 0 && state.isCollapseOpen[_obj.id]
-                    ? nodes
-                    : null}
-                </Collapse>
-              );
-
-              createSubTree(correspondingObjects, tree, DOMNodes);
-            });
-          });
-        };
-        createSubTree(obj, TEMPLATE, DOMNodes);
-      });
-      DOMNodes.push(
-        <Collapse isOpen={state.isCollapseOpen[groupKey]}>
-          {searchGroup.length > 0 && state.isCollapseOpen[groupKey]
-            ? searchGroup
+  const objs = data =>
+    map(data, (values, name) => (
+      <div style={{ marginLeft: "10px" }}>
+        <span onClick={() => effects.toggle(name)}>
+          {!state.isCollapseOpen[name] ? (
+            <FaPlusSquare />
+          ) : (
+            <FaRegMinusSquare />
+          )}{" "}
+          {name}
+        </span>
+        <Collapse isOpen={state.isCollapseOpen[name]}>
+          {state.isCollapseOpen[name]
+            ? Array.isArray(values)
+              ? constructTreeFromArray(values)
+              : typeof values === "object" && objs(values)
             : null}
         </Collapse>
-      );
-    });
-    return DOMNodes;
-  };
-
-  const objs = createTree({ data: state.objs });
+      </div>
+    ));
 
   return (
     <div className="menu scroll-style">
@@ -429,75 +427,7 @@ const Menu = ({ effects, state, setObject }) => {
           <br />
           <span>Saved searchs</span>
           <br />
-          {/* {map(state.objs, (data, name) => (
-        <Item
-          className="mb-1 ml-3"
-          // onClick={() => effects.setCurrentSavedSearch(name)}
-        >
-          <div
-            style={{ cursor: "pointer" }}
-            id={name}
-            onClick={() => effects.toggle(name)}
-          >
-            {!state.isCollapseOpen[name] ? (
-              <FaPlusSquare />
-            ) : (
-              <FaRegMinusSquare />
-            )}{" "}
-            {capitalize(lowerCase(name))}
-          </div>
-          <Collapse isOpen={state.isCollapseOpen[name]} className="mt-1 ml-2">
-            {state.isCollapseOpen[name] &&
-              Object.keys(data).map(key => {
-                return (
-                  <Item className="mb-1 ml-3">
-                    <div
-                      style={{ cursor: "pointer" }}
-                      id={key}
-                      onClick={() => effects.toggle(key)}
-                    >
-                      {!state.isCollapseOpen[key] ? (
-                        <FaPlusSquare />
-                      ) : (
-                        <FaRegMinusSquare />
-                      )}{" "}
-                      {key}
-                    </div>
-                    <Collapse isOpen={state.isCollapseOpen[key]}>
-                      {state.isCollapseOpen[key] && (
-                        <Form>
-                          {data[key].map(elt => (
-                            <Item
-                              className="mt-1"
-                              onClick={() => setObject(elt)}
-                            >
-                              <div style={{ marginLeft: "30px" }}>
-                                <FormGroup check>
-                                  <Input
-                                    type="checkbox"
-                                    name="check"
-                                    id={elt.id}
-                                    onChange={ev =>
-                                      effects.handleSelectedItem(ev, elt)
-                                    }
-                                  />
-                                  <Label for={elt.id} check>
-                                    {elt.name_label}
-                                  </Label>
-                                </FormGroup>
-                              </div>
-                            </Item>
-                          ))}
-                        </Form>
-                      )}
-                    </Collapse>
-                  </Item>
-                );
-              })}
-          </Collapse>
-        </Item>
-      ))} */}
-          {objs}
+          {objs(state.objs)}
         </MenuItem>
         <div className="text-center">
           <Button
@@ -513,7 +443,43 @@ const Menu = ({ effects, state, setObject }) => {
             New search <FaPlus />
           </Button>
         </div>
+        <div className="text-center">
+          <Button
+            // color="light"
+            size="sm"
+            onClick={effects.toggleAdjustModal}
+            style={{
+              width: "200px",
+              marginTop: "10px",
+              marginBottom: "10px"
+            }}
+          >
+            Edit tree view
+          </Button>
+        </div>
       </ListGroup>
+
+      <Modal isOpen={state.adjustModal} toggle={effects.toggleAdjustModal}>
+        <ModalHeader toggle={effects.toggleAdjustModal}>
+          Adjust tree view
+        </ModalHeader>
+        <ModalBody>
+          <div style={{ height: 600 }}>
+            <SortableTree
+              treeData={state.treeTemplateData}
+              onChange={effects.onTreeTemplateDataChange}
+            />
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button color="primary" type="submit">
+            Adjust
+          </Button>{" "}
+          <Button color="secondary" onClick={effects.toggleAdjustModal}>
+            Cancel
+          </Button>
+        </ModalFooter>
+      </Modal>
 
       <Modal isOpen={state.addSearchModal} toggle={effects.toggleSearchModal}>
         <ModalHeader toggle={effects.toggleSearchModal}>New search</ModalHeader>
