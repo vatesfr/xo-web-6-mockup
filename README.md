@@ -11,20 +11,20 @@ pool
 │
 ├── VM
 │   ├── VBD
-│   └── VM_snapshot
+│   └── VIF
 ├── VM_template
+├── VM_snapshot
 ├── VM_controller
 ├── Host
 │   ├── FGPU
 │   ├── PBD
-│   └── PCI
+│   ├── PCI
+│   └── PIF
 ├── SR
 │   ├── VDI
 │   ├── VDI_snapshot
 │   └── VDI_unmanaged
 └── Network
-    ├── VIF
-    └── PIF
 ```
 
 #### Infinite tree
