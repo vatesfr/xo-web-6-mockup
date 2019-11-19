@@ -60,6 +60,8 @@ pool
     └── PIF
 ```
 
+- Make Resizable panes when the tree view exceeds the default width  
+
 ### Filtering
 
 #### View (saved, uncollapsable)
