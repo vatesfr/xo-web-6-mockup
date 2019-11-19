@@ -15,7 +15,7 @@ pool
 ├── VM_template
 ├── VM_snapshot
 ├── VM_controller
-├── Host
+├── host
 │   ├── FGPU
 │   ├── PBD
 │   ├── PCI
@@ -24,7 +24,7 @@ pool
 │   ├── VDI
 │   ├── VDI_snapshot
 │   └── VDI_unmanaged
-└── Network
+└── network
 ```
 
 #### Infinite tree
@@ -35,9 +35,9 @@ pool
 ├── VM
 │   ├── VBD
 │   ├── VIF
-│   │    └── Network
+│   │    └── network
 │   │            └── VIF
-│   │                 └── Network
+│   │                 └── network
 │   │                          └── VIF
 │   │                               └── ∞
 │   └── VM_snapshot
@@ -47,7 +47,7 @@ pool
 ├── VM_controller
 │   ├── VBD
 │   └── VM_snapshot
-├── Host
+├── host
 │   ├── FGPU
 │   ├── PBD
 │   └── PCI
