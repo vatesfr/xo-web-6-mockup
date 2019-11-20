@@ -325,11 +325,6 @@ const Menu = ({ effects, state, setObject }) => {
         return (
           <div style={{ marginLeft: "10px" }}>
             <span onClick={() => effects.toggle(_.id)}>
-              {!state.isCollapseOpen[_.id] ? (
-                <FaPlusSquare />
-              ) : (
-                <FaRegMinusSquare />
-              )}{" "}
               {_[nameLabelByObject[_.type]]}
             </span>
             <div>{constructSubTree(_)}</div>
