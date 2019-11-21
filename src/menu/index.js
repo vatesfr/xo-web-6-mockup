@@ -45,6 +45,8 @@ import * as ComplexMatcher from "complex-matcher";
 import objects from "../data/objects";
 import data from "../data/sample";
 
+import { FixedSizeList as List } from "react-window";
+
 import "./index.css";
 import "react-sortable-tree/style.css";
 import Logo from "../imgs/logo.png";
@@ -306,7 +308,6 @@ const withState = provideState({
             filteredObjects,
             ComplexMatcher.parse(searchFilter || "").createPredicate()
           );
-          console.log(searchGroupBy);
           return !isEmpty(searchGroupBy)
             ? groupBy(_filteredObjects, searchGroupBy)
             : _filteredObjects;
@@ -318,7 +319,6 @@ const withState = provideState({
 });
 
 const Menu = ({ effects, state, setObject }) => {
-  console.log(state.objs);
   const makeSubTreeFromTemplateTree = (type, parentId) =>
     map(objects, _ => {
       if (_.type === type && _[connectors[type]] === parentId) {
@@ -351,24 +351,34 @@ const Menu = ({ effects, state, setObject }) => {
       </div>
     ));
 
-  const constructTreeFromArray = data =>
-    map(data, obj => (
-      <div style={{ marginLeft: "10px" }}>
-        <span onClick={() => effects.toggle(obj.id)}>
-          {isEmpty(TEMPLATE[obj.type]) ? null : !state.isCollapseOpen[
-              obj.id
-            ] ? (
-            <FaPlusSquare />
-          ) : (
-            <FaRegMinusSquare />
-          )}{" "}
-          {obj[nameLabelByObject[obj.type]]}
-        </span>
-        <Collapse isOpen={state.isCollapseOpen[obj.id]}>
-          {state.isCollapseOpen[obj.id] && constructSubTree(obj)}
-        </Collapse>
-      </div>
-    ));
+  const constructTreeFromArray = data => (
+    <List
+      height={200}
+      itemData={data}
+      itemCount={data.length}
+      itemSize={25}
+      width={300}
+    >
+      {({ index, style }) => (
+        <div style={{ ...style, marginLeft: "10px" }}>
+          <span onClick={() => effects.toggle(data[index].id)}>
+            {isEmpty(TEMPLATE[data[index].type]) ? null : !state.isCollapseOpen[
+                data[index].id
+              ] ? (
+              <FaPlusSquare />
+            ) : (
+              <FaRegMinusSquare />
+            )}{" "}
+            {data[index][nameLabelByObject[data[index].type]]}
+          </span>
+          <Collapse isOpen={state.isCollapseOpen[data[index].id]}>
+            {state.isCollapseOpen[data[index].id] &&
+              constructSubTree(data[index])}
+          </Collapse>
+        </div>
+      )}
+    </List>
+  );
 
   const objs = data =>
     map(data, (values, name) => (
