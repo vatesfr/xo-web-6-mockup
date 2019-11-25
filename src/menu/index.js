@@ -36,6 +36,7 @@ import {
   FaAngleDown,
   FaPlusSquare,
   FaRegMinusSquare,
+  FaSquare,
   FaPlus
 } from "react-icons/fa";
 import styled from "styled-components";
@@ -331,7 +332,7 @@ const Menu = ({ effects, state, setObject }) => {
         return (
           <div style={{ marginLeft: "10px" }}>
             <span onClick={() => effects.toggle(_.id)}>
-              {_[nameLabelByObject[_.type]]}
+              <FaSquare /> {_[nameLabelByObject[_.type]]}
             </span>
             <div>{constructSubTree(_)}</div>
           </div>
@@ -363,9 +364,9 @@ const Menu = ({ effects, state, setObject }) => {
     return map(_data, obj => (
       <div style={{ marginLeft: "10px" }}>
         <span onClick={() => effects.toggle(obj.id)}>
-          {isEmpty(TEMPLATE[obj.type]) ? null : !state.isCollapseOpen[
-              obj.id
-            ] ? (
+          {isEmpty(TEMPLATE[obj.type]) ? (
+            <FaSquare />
+          ) : !state.isCollapseOpen[obj.id] ? (
             <FaPlusSquare />
           ) : (
             <FaRegMinusSquare />
