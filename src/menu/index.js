@@ -200,6 +200,8 @@ const adjustableTemplate = [
   }
 ];
 
+const ELEMENTS_BY_VIEW = 20;
+
 const withState = provideState({
   initialState: () => ({
     isCollapseOpen: {},
@@ -219,9 +221,13 @@ const withState = provideState({
         searchGroupBy: "type"
       }
     },
-    treeTemplateData: adjustableTemplate
+    treeTemplateData: adjustableTemplate,
+    elementsPerTree: ELEMENTS_BY_VIEW
   }),
   effects: {
+    displayMore() {
+      return { elementsPerTree: this.state.elementsPerTree + ELEMENTS_BY_VIEW };
+    },
     handleSearch(_, evt) {
       return {
         searchValue: evt.target.value
@@ -333,7 +339,7 @@ const Menu = ({ effects, state, setObject }) => {
       }
     });
 
-  const constructSubTree = obj =>
+  const constructSubTree = (obj, elementsPerTree) =>
     map(TEMPLATE[obj.type], (value, type) => (
       <div style={{ marginLeft: "10px" }}>
         <span onClick={() => effects.toggle(value.id + type)}>
@@ -351,55 +357,64 @@ const Menu = ({ effects, state, setObject }) => {
       </div>
     ));
 
-  const constructTreeFromArray = data => (
-    <List
-      height={200}
-      itemData={data}
-      itemCount={data.length}
-      itemSize={25}
-      width={300}
-    >
-      {({ index, style }) => (
-        <div style={{ ...style, marginLeft: "10px" }}>
-          <span onClick={() => effects.toggle(data[index].id)}>
-            {isEmpty(TEMPLATE[data[index].type]) ? null : !state.isCollapseOpen[
-                data[index].id
-              ] ? (
-              <FaPlusSquare />
-            ) : (
-              <FaRegMinusSquare />
-            )}{" "}
-            {data[index][nameLabelByObject[data[index].type]]}
-          </span>
-          <Collapse isOpen={state.isCollapseOpen[data[index].id]}>
-            {state.isCollapseOpen[data[index].id] &&
-              constructSubTree(data[index])}
-          </Collapse>
-        </div>
-      )}
-    </List>
-  );
-
-  const objs = data =>
-    map(data, (values, name) => (
+  const constructTreeFromArray = (data, elementsPerTree) => {
+    let _data = [...data];
+    _data = _data.splice(0, elementsPerTree);
+    return map(_data, obj => (
       <div style={{ marginLeft: "10px" }}>
-        <span onClick={() => effects.toggle(name)}>
-          {!state.isCollapseOpen[name] ? (
+        <span onClick={() => effects.toggle(obj.id)}>
+          {isEmpty(TEMPLATE[obj.type]) ? null : !state.isCollapseOpen[
+              obj.id
+            ] ? (
             <FaPlusSquare />
           ) : (
             <FaRegMinusSquare />
           )}{" "}
-          {name}
+          {obj[nameLabelByObject[obj.type]]}
         </span>
-        <Collapse isOpen={state.isCollapseOpen[name]}>
-          {state.isCollapseOpen[name]
-            ? Array.isArray(values)
-              ? constructTreeFromArray(values)
-              : typeof values === "object" && objs(values)
-            : null}
+        <Collapse isOpen={state.isCollapseOpen[obj.id]}>
+          {state.isCollapseOpen[obj.id] &&
+            constructSubTree(obj, elementsPerTree)}
         </Collapse>
       </div>
     ));
+  };
+
+  const objs = (data, elementsPerTree) =>
+    map(data, (values, name) => {
+      const isArray = Array.isArray(values);
+      const isObject = typeof values === "object";
+      return (
+        <div style={{ marginLeft: "10px" }}>
+          <span onClick={() => effects.toggle(name)}>
+            {!state.isCollapseOpen[name] ? (
+              <FaPlusSquare />
+            ) : (
+              <FaRegMinusSquare />
+            )}{" "}
+            {name}
+          </span>
+          <Collapse isOpen={state.isCollapseOpen[name]}>
+            {state.isCollapseOpen[name]
+              ? isArray
+                ? constructTreeFromArray(values, elementsPerTree)
+                : isObject && objs(values, elementsPerTree)
+              : null}
+            {isArray && values.length > ELEMENTS_BY_VIEW && (
+              <div>
+                <Button
+                  color="link"
+                  style={{ color: "#9ea2a0" }}
+                  onClick={effects.displayMore}
+                >
+                  Display more
+                </Button>
+              </div>
+            )}
+          </Collapse>
+        </div>
+      );
+    });
 
   return (
     <div className="menu scroll-style">
@@ -436,7 +451,7 @@ const Menu = ({ effects, state, setObject }) => {
           <br />
           <span>Saved searchs</span>
           <br />
-          {objs(state.objs)}
+          {objs(state.objs, state.elementsPerTree)}
         </MenuItem>
         <div className="text-center">
           <Button
