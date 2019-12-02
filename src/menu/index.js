@@ -46,8 +46,6 @@ import * as ComplexMatcher from "complex-matcher";
 import objects from "../data/objects";
 import data from "../data/sample";
 
-import { FixedSizeList as List } from "react-window";
-
 import "./index.css";
 import "react-sortable-tree/style.css";
 import Logo from "../imgs/logo.png";
@@ -325,34 +323,44 @@ const withState = provideState({
   }
 });
 
-const Menu = ({ effects, state, setObject }) => {
-  const makeSubTreeFromTemplateTree = (type, parentId) =>
-    map(objects, _ => {
-      if (_.type === type && _[connectors[type]] === parentId) {
-        return (
-          <div style={{ marginLeft: "10px" }}>
-            <span onClick={() => effects.toggle(_.id)}>
-              <FaSquare /> {_[nameLabelByObject[_.type]]}
-            </span>
-            <div>{constructSubTree(_)}</div>
-          </div>
-        );
-      }
-    });
+const Menu = ({ effects, state }) => {
+  const makeSubTreeFromTemplateTree = (type, parentId) => {
+    const objs = filter(
+      objects,
+      _ => _.type === type && _[connectors[type]] === parentId
+    );
+
+    const res = map(objs, _ => (
+      <div style={{ marginLeft: "10px" }}>
+        <span onClick={() => effects.toggle(_.id)}>
+          <FaSquare /> {_[nameLabelByObject[_.type]]}
+        </span>
+        <div>{constructSubTree(_)}</div>
+      </div>
+    ));
+
+    return res.length > 0 ? (
+      res
+    ) : (
+      <div className="text-muted" style={{ marginLeft: "10px" }}>
+        Empty
+      </div>
+    );
+  };
 
   const constructSubTree = (obj, elementsPerTree) =>
     map(TEMPLATE[obj.type], (value, type) => (
       <div style={{ marginLeft: "10px" }}>
-        <span onClick={() => effects.toggle(value.id + type)}>
-          {!state.isCollapseOpen[value.id + type] ? (
+        <span onClick={() => effects.toggle(obj.id + type)}>
+          {!state.isCollapseOpen[obj.id + type] ? (
             <FaPlusSquare />
           ) : (
             <FaRegMinusSquare />
           )}{" "}
           {`${type}s`}
         </span>
-        <Collapse isOpen={state.isCollapseOpen[value.id + type]}>
-          {state.isCollapseOpen[value.id + type] &&
+        <Collapse isOpen={state.isCollapseOpen[obj.id + type]}>
+          {state.isCollapseOpen[obj.id + type] &&
             makeSubTreeFromTemplateTree(type, obj.id)}
         </Collapse>
       </div>
