@@ -14,7 +14,8 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  UncontrolledCollapse
+  UncontrolledCollapse,
+  UncontrolledTooltip
 } from "reactstrap";
 import {
   filter,
@@ -36,7 +37,7 @@ import {
   FaAngleDown,
   FaPlusSquare,
   FaRegMinusSquare,
-  FaSquare,
+  FaHdd,
   FaPlus
 } from "react-icons/fa";
 import styled from "styled-components";
@@ -307,12 +308,13 @@ const withState = provideState({
       Object.keys(savedSearchs).forEach(searchName => {
         objsBySearchName[searchName] = (() => {
           const searchFilter = savedSearchs[searchName].searchFilter;
-          const searchGroupBy = savedSearchs[searchName].searchGroupBy;
+          let searchGroupBy = savedSearchs[searchName].searchGroupBy;
           const _filteredObjects = filter(
             // objects,
             filteredObjects,
             ComplexMatcher.parse(searchFilter || "").createPredicate()
           );
+
           return !isEmpty(searchGroupBy)
             ? groupBy(_filteredObjects, searchGroupBy)
             : _filteredObjects;
@@ -322,6 +324,20 @@ const withState = provideState({
     }
   }
 });
+
+const makeNameCompletableByToolTip = name => {
+  const id = generateId();
+  return name.length > 22 ? (
+    <span>
+      <span id={id}>{`${name.substring(0, 22).trim()}...`}</span>
+      <UncontrolledTooltip target={id} placement="top">
+        {name}
+      </UncontrolledTooltip>
+    </span>
+  ) : (
+    name
+  );
+};
 
 const Menu = ({ effects, state }) => {
   const makeSubTreeFromTemplateTree = (type, parentId) => {
@@ -333,7 +349,14 @@ const Menu = ({ effects, state }) => {
     const res = map(objs, _ => (
       <div style={{ marginLeft: "10px" }}>
         <span onClick={() => effects.toggle(_.id)}>
-          <FaSquare /> {_[nameLabelByObject[_.type]]}
+          <span
+            style={{
+              whiteSpace: "nowrap"
+            }}
+          >
+            <FaHdd />{" "}
+            {makeNameCompletableByToolTip(_[nameLabelByObject[_.type]])}
+          </span>
         </span>
         <div>{constructSubTree(_)}</div>
       </div>
@@ -373,7 +396,7 @@ const Menu = ({ effects, state }) => {
       <div style={{ marginLeft: "10px" }}>
         <span onClick={() => effects.toggle(obj.id)}>
           {isEmpty(TEMPLATE[obj.type]) ? (
-            <FaSquare />
+            <FaHdd />
           ) : !state.isCollapseOpen[obj.id] ? (
             <FaPlusSquare />
           ) : (
