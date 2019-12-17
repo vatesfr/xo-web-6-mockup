@@ -21,6 +21,7 @@ import {
   filter,
   find,
   forEach,
+  escape,
   groupBy,
   isEmpty,
   lowerCase,
@@ -286,7 +287,7 @@ const withState = provideState({
       } = this.state;
       // Add search
       return {
-        searchValue: searchFilter,
+        // searchValue: searchFilter,
         savedSearchs: {
           ...savedSearchs,
           [searchName]: {
@@ -303,8 +304,12 @@ const withState = provideState({
     filteredObjects: ({ predicate }) => filter(objects, predicate),
     predicate: ({ searchValue }) =>
       ComplexMatcher.parse(searchValue).createPredicate(),
-    objs: ({ filteredObjects, savedSearchs }) => {
+    objs: ({ filteredObjects, savedSearchs, searchValue }) => {
+      console.log(filteredObjects);
       const objsBySearchName = {};
+      if (searchValue) {
+        return filteredObjects;
+      }
       Object.keys(savedSearchs).forEach(searchName => {
         objsBySearchName[searchName] = (() => {
           const searchFilter = savedSearchs[searchName].searchFilter;
@@ -325,12 +330,12 @@ const withState = provideState({
   }
 });
 
-const makeNameCompletableByToolTip = name => {
-  const id = generateId();
-  return name.length > 22 ? (
+const makeNameCompletableByToolTip = (name, id) => {
+  id = id.replace(":", "");
+  return name && name.length > 18 ? (
     <span>
-      <span id={id}>{`${name.substring(0, 22).trim()}...`}</span>
-      <UncontrolledTooltip target={id} placement="top">
+      <span id={"s" + id}>{`${name.substring(0, 22).trim()}...`}</span>
+      <UncontrolledTooltip target={"s" + id} placement="top">
         {name}
       </UncontrolledTooltip>
     </span>
@@ -347,7 +352,7 @@ const Menu = ({ effects, state }) => {
     );
 
     const res = map(objs, _ => (
-      <div style={{ marginLeft: "10px" }}>
+      <Item style={{ marginLeft: "10px" }}>
         <span onClick={() => effects.toggle(_.id)}>
           <span
             style={{
@@ -355,11 +360,11 @@ const Menu = ({ effects, state }) => {
             }}
           >
             <FaHdd />{" "}
-            {makeNameCompletableByToolTip(_[nameLabelByObject[_.type]])}
+            {makeNameCompletableByToolTip(_[nameLabelByObject[_.type]], _.id)}
           </span>
         </span>
         <div>{constructSubTree(_)}</div>
-      </div>
+      </Item>
     ));
 
     return res.length > 0 ? (
@@ -373,7 +378,7 @@ const Menu = ({ effects, state }) => {
 
   const constructSubTree = (obj, elementsPerTree) =>
     map(TEMPLATE[obj.type], (value, type) => (
-      <div style={{ marginLeft: "10px" }}>
+      <Item style={{ marginLeft: "10px" }}>
         <span onClick={() => effects.toggle(obj.id + type)}>
           {!state.isCollapseOpen[obj.id + type] ? (
             <FaPlusSquare />
@@ -386,14 +391,14 @@ const Menu = ({ effects, state }) => {
           {state.isCollapseOpen[obj.id + type] &&
             makeSubTreeFromTemplateTree(type, obj.id)}
         </Collapse>
-      </div>
+      </Item>
     ));
 
   const constructTreeFromArray = (data, elementsPerTree) => {
     let _data = [...data];
     _data = _data.splice(0, elementsPerTree);
     return map(_data, obj => (
-      <div style={{ marginLeft: "10px" }}>
+      <Item style={{ marginLeft: "10px" }}>
         <span onClick={() => effects.toggle(obj.id)}>
           {isEmpty(TEMPLATE[obj.type]) ? (
             <FaHdd />
@@ -408,45 +413,53 @@ const Menu = ({ effects, state }) => {
           {state.isCollapseOpen[obj.id] &&
             constructSubTree(obj, elementsPerTree)}
         </Collapse>
-      </div>
+      </Item>
     ));
   };
 
   const objs = (data, elementsPerTree) =>
-    map(data, (values, name) => {
-      const isArray = Array.isArray(values);
-      const isObject = typeof values === "object";
-      return (
-        <div style={{ marginLeft: "10px" }}>
-          <span onClick={() => effects.toggle(name)}>
-            {!state.isCollapseOpen[name] ? (
-              <FaPlusSquare />
-            ) : (
-              <FaRegMinusSquare />
-            )}{" "}
-            {name}
-          </span>
-          <Collapse isOpen={state.isCollapseOpen[name]}>
-            {state.isCollapseOpen[name]
-              ? isArray
-                ? constructTreeFromArray(values, elementsPerTree)
-                : isObject && objs(values, elementsPerTree)
-              : null}
-            {isArray && values.length > ELEMENTS_BY_VIEW && (
-              <div>
-                <Button
-                  color="link"
-                  style={{ color: "#9ea2a0" }}
-                  onClick={effects.displayMore}
-                >
-                  Display more
-                </Button>
-              </div>
-            )}
-          </Collapse>
-        </div>
-      );
-    });
+    Array.isArray(data)
+      ? constructTreeFromArray(data, elementsPerTree)
+      : map(data, (values, name) => {
+          const isArray = Array.isArray(values);
+          const isObject = typeof values === "object";
+          return (
+            <Item style={{ marginLeft: "10px" }}>
+              <span onClick={() => effects.toggle(name)}>
+                {!state.isCollapseOpen[name] ? (
+                  <FaPlusSquare />
+                ) : (
+                  <FaRegMinusSquare />
+                )}{" "}
+                {name}
+              </span>
+              <Collapse isOpen={state.isCollapseOpen[name]}>
+                {state.isCollapseOpen[name] && !isEmpty(values) ? (
+                  isArray ? (
+                    constructTreeFromArray(values, elementsPerTree)
+                  ) : (
+                    isObject && objs(values, elementsPerTree)
+                  )
+                ) : (
+                  <div className="text-muted" style={{ marginLeft: "10px" }}>
+                    Empty
+                  </div>
+                )}
+                {isArray && values.length > ELEMENTS_BY_VIEW && (
+                  <div>
+                    <Button
+                      color="link"
+                      style={{ color: "#9ea2a0" }}
+                      onClick={effects.displayMore}
+                    >
+                      Display more
+                    </Button>
+                  </div>
+                )}
+              </Collapse>
+            </Item>
+          );
+        });
 
   return (
     <div className="menu scroll-style">
