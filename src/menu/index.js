@@ -28,6 +28,7 @@ import {
   map,
   mapValues,
   remove,
+  startCase,
   capitalize
 } from "lodash";
 import {
@@ -219,6 +220,9 @@ const withState = provideState({
     savedSearchs: {
       Instrastructures: {
         searchFilter: "type:pool",
+        searchGroupBy: "type"
+      },
+      ByType: {
         searchGroupBy: "type"
       }
     },
@@ -431,7 +435,7 @@ const Menu = ({ effects, state }) => {
                 ) : (
                   <FaRegMinusSquare />
                 )}{" "}
-                {name}
+                {startCase(name)}
               </span>
               <Collapse isOpen={state.isCollapseOpen[name]}>
                 {state.isCollapseOpen[name] && !isEmpty(values) ? (
