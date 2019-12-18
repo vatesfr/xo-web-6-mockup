@@ -250,20 +250,8 @@ const withState = provideState({
     toggleObjects() {
       return { isObjectsOpen: !this.state.isObjectsOpen };
     },
-    handleSelectedItem(_, evt, elt) {
-      if (evt.target.checked) {
-        this.props.setObjects([...this.state.selectedElements, elt]);
-        return {
-          selectedElements: [...this.state.selectedElements, elt]
-        };
-      } else {
-        const _selectedElements = this.state.selectedElements;
-        remove(_selectedElements, element => element.id === elt.id);
-        this.props.setObjects(_selectedElements);
-        return {
-          selectedElements: _selectedElements
-        };
-      }
+    handleSelectedItem(_, elt) {
+      this.props.setObject(elt);
     },
     setCurrentSavedSearch(_, name) {
       return {
@@ -334,21 +322,24 @@ const withState = provideState({
   }
 });
 
-const makeNameCompletableByToolTip = (name, id) => {
-  id = id.replace(":", "");
-  return name && name.length > 18 ? (
-    <span>
-      <span id={"s" + id}>{`${name.substring(0, 22).trim()}...`}</span>
-      <UncontrolledTooltip target={"s" + id} placement="top">
-        {name}
-      </UncontrolledTooltip>
-    </span>
-  ) : (
-    name
-  );
-};
-
 const Menu = ({ effects, state }) => {
+  const makeNameCompletableByToolTip = (elt, name, id) => {
+    id = id.replace(":", "");
+    return name && name.length > 18 ? (
+      <span>
+        <span
+          id={"s" + id}
+          onClick={() => effects.handleSelectedItem(elt)}
+        >{`${name.substring(0, 22).trim()}...`}</span>
+        <UncontrolledTooltip target={"s" + id} placement="top">
+          {name}
+        </UncontrolledTooltip>
+      </span>
+    ) : (
+      name
+    );
+  };
+
   const makeSubTreeFromTemplateTree = (type, parentId) => {
     const objs = filter(
       objects,
@@ -364,7 +355,11 @@ const Menu = ({ effects, state }) => {
             }}
           >
             <FaHdd />{" "}
-            {makeNameCompletableByToolTip(_[nameLabelByObject[_.type]], _.id)}
+            {makeNameCompletableByToolTip(
+              _,
+              _[nameLabelByObject[_.type]],
+              _.id
+            )}
           </span>
         </span>
         <div>{constructSubTree(_)}</div>
@@ -389,8 +384,8 @@ const Menu = ({ effects, state }) => {
           ) : (
             <FaRegMinusSquare />
           )}{" "}
-          {`${type}s`}
         </span>
+        {`${type}s`}
         <Collapse isOpen={state.isCollapseOpen[obj.id + type]}>
           {state.isCollapseOpen[obj.id + type] &&
             makeSubTreeFromTemplateTree(type, obj.id)}
@@ -411,6 +406,8 @@ const Menu = ({ effects, state }) => {
           ) : (
             <FaRegMinusSquare />
           )}{" "}
+        </span>
+        <span onClick={() => effects.handleSelectedItem(obj)}>
           {obj[nameLabelByObject[obj.type]]}
         </span>
         <Collapse isOpen={state.isCollapseOpen[obj.id]}>
@@ -435,8 +432,8 @@ const Menu = ({ effects, state }) => {
                 ) : (
                   <FaRegMinusSquare />
                 )}{" "}
-                {startCase(name)}
               </span>
+              {startCase(name)}
               <Collapse isOpen={state.isCollapseOpen[name]}>
                 {state.isCollapseOpen[name] && !isEmpty(values) ? (
                   isArray ? (

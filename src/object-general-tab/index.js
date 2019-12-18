@@ -26,7 +26,7 @@ const withState = provideState({
 });
 
 const ObjectGeneralTab = ({ effects, state, data }) => (
-  <div>
+  <div>{console.log(data)}
     {!isEmpty(data) && (
       <div>
         <h2>

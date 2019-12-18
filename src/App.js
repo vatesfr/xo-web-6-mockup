@@ -62,6 +62,7 @@ function App({
 }) {
   return (
     <div className="App">
+      {console.log(currentObject)}
       <Helmet>
         <title>Xen Orchestra</title>
       </Helmet>
