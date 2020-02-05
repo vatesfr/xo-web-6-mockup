@@ -1,68 +1,74 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Specification
 
-## Available Scripts
+### Views
 
-In the project directory, you can run:
+In Xen Orchestra 6 release, a tree view will be added in order to display objects heicically.
+In order to achieve this, a default map tree view should be set.
 
-### `npm start`
+#### Basic tree 
+```bash
+pool
+│
+├── VM
+│   ├── VBD
+│   └── VIF
+├── VM_template
+├── VM_snapshot
+├── VM_controller
+├── host
+│   ├── FGPU
+│   ├── PBD
+│   ├── PCI
+│   └── PIF
+├── SR
+│   ├── VDI
+│   ├── VDI_snapshot
+│   └── VDI_unmanaged
+└── network
+```
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+#### Infinite tree
 
-The page will reload if you make edits.<br>
-You will also see any lint errors in the console.
+```bash
+pool
+│
+├── VM
+│   ├── VBD
+│   ├── VIF
+│   │    └── network
+│   │            └── VIF
+│   │                 └── network
+│   │                          └── VIF
+│   │                               └── ∞
+│   └── VM_snapshot
+├── VM_template
+│   ├── VBD
+│   └── VM_snapshot
+├── VM_controller
+│   ├── VBD
+│   └── VM_snapshot
+├── host
+│   ├── FGPU
+│   ├── PBD
+│   └── PCI
+├── SR
+│   ├── VDI
+│   ├── VDI_snapshot
+│   └── VDI_unmanaged
+└── Network
+    ├── VIF
+    └── PIF
+```
 
-### `npm test`
+- Make Resizable panes when the tree view exceeds the default width  
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Filtering
 
-### `npm run build`
+#### View (saved, uncollapsable)
+- name
+- filter: only on top-level objects
+- group by: type, tag, folder, ...
 
-Builds the app for production to the `build` folder.<br>
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `npm run build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+#### Manual search
+- Filter all XO objects
+- For each object, go up the infra until you find a top-level node to determine path
